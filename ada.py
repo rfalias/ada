@@ -6,24 +6,12 @@ from discord import app_commands
 import requests
 import satisfactory_api
 
-# Function to find the PID of the server process by name
-def find_pid_by_name():
-    matching_pids = []
-    name = "FactoryServer-Linux-Shipping"
-    for proc in psutil.process_iter(['pid', 'name']):
-        try:
-            if name.lower() in proc.info['name'].lower():
-                matching_pids.append(proc.info['pid'])
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            pass
-
-    return matching_pids[0] if matching_pids else None
 
 def get_token():
     with open("bot_token", 'r') as f:
         return f.read()
 
-# Function to count the number of players connected by reading network connections
+# Get playercount from serverGameState API
 def get_player_count():
     status_raw = satisfactory_api.query_server_state()
     if not status_raw:
@@ -36,6 +24,8 @@ def get_player_count():
     numConnectedPlayers = status_raw['data']['serverGameState']['numConnectedPlayers']
     return numConnectedPlayers
 
+# Get the server status string
+# Query the serverGameState and extract relevant fields
 def get_server_status_string():
     status_raw = satisfactory_api.query_server_state()
     if not status_raw:
@@ -95,8 +85,11 @@ async def on_ready():
 @tasks.loop(seconds=30)
 async def update_activity_task():
     player_count = get_player_count()
+    player_string = "pioneers"
+    if player_count == 1:
+        player_string = "pioneer"
     try:
-        content = f"{player_count} players working on {satisfactory_api.get_current_milestone()}"
+        content = f"{player_count} {player_string} working on {satisfactory_api.get_current_milestone()}"
     except:
         content = "Unable to supervise players"
 
